@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bean Counter</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+      }
+
+      .container {
+        text-align: center;
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 3em;
+        margin-bottom: 30px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .earnings {
+        font-size: 8em;
+        font-weight: bold;
+        margin: 30px 0;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+        font-family: "Courier New", monospace;
+        color: #00ff88;
+        cursor: help;
+        position: relative;
+      }
+
+      .tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 0.2em;
+        white-space: nowrap;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.3s, visibility 0.3s;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .earnings:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .info {
+        font-size: 1.5em;
+        margin: 20px 0;
+        opacity: 0.8;
+      }
+
+      button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        color: white;
+        padding: 15px 30px;
+        font-size: 1.2em;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+      }
+
+      .started-time {
+        font-size: 1em;
+        margin-top: 20px;
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🫘 Bean Counter</h1>
+      <div id="earnings" class="earnings">
+        0 🫘
+        <div id="tooltip" class="tooltip"></div>
+      </div>
+      <div id="info" class="info">
+        Click below to start growing your beans!
+      </div>
+      <button onclick="startCounting()">Start Bean Growing</button>
+      <div id="startedTime" class="started-time"></div>
+    </div>
+
+    <script>
+      let salary = 0;
+      let startTime = null;
+      let intervalId = null;
+
+      let isMoneyMode = false;
+
+      function startCounting() {
+        const userSalary = prompt("How many beans do you grow per year?");
+
+        if (userSalary === null || userSalary === "") {
+          return;
+        }
+
+        // Check if input starts with $ to enable money mode
+        isMoneyMode = userSalary.trim().startsWith('$');
+
+        salary = parseFloat(userSalary.replace(/[,$]/g, ""));
+
+        if (isNaN(salary) || salary <= 0) {
+          if (isMoneyMode) {
+            alert("Please enter a valid salary amount!");
+          } else {
+            alert("Please enter a valid number of beans!");
+          }
+          return;
+        }
+
+        startTime = new Date();
+
+        if (isMoneyMode) {
+          document.getElementById(
+            "info"
+          ).textContent = `Earning $${salary.toLocaleString()} per year`;
+          document.getElementById(
+            "startedTime"
+          ).textContent = `Started counting at: ${startTime.toLocaleString()}`;
+        } else {
+          document.getElementById(
+            "info"
+          ).textContent = `Growing ${salary.toLocaleString()} beans per year`;
+          document.getElementById(
+            "startedTime"
+          ).textContent = `Started growing at: ${startTime.toLocaleString()}`;
+        }
+
+        // Clear any existing interval
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+
+        // Update 10 times per second (every 100ms)
+        intervalId = setInterval(updateEarnings, 100);
+
+        // Hide the button
+        document.querySelector("button").style.display = "none";
+      }
+
+      function updateEarnings() {
+        if (!startTime || salary === 0) return;
+
+        const now = new Date();
+        const millisecondsElapsed = now - startTime;
+        const secondsElapsed = millisecondsElapsed / 1000;
+
+        // Calculate working hours per year (weekdays only, 8 hours per day)
+        // 52 weeks * 5 weekdays * 8 hours = 2080 working hours per year
+        const workingHoursPerYear = 52 * 5 * 8;
+        const workingSecondsPerYear = workingHoursPerYear * 60 * 60;
+
+        // Calculate earnings per second based on actual working time
+        const earningsPerSecond = salary / workingSecondsPerYear;
+        const totalEarnings = earningsPerSecond * secondsElapsed;
+
+        // Update the earnings display
+        const earningsElement = document.getElementById("earnings");
+        if (isMoneyMode) {
+          earningsElement.innerHTML = `$${totalEarnings.toFixed(
+            2
+          )}<div id="tooltip" class="tooltip"></div>`;
+        } else {
+          earningsElement.innerHTML = `${totalEarnings.toFixed(
+            0
+          )} 🫘<div id="tooltip" class="tooltip"></div>`;
+        }
+
+        // Update tooltip with rates
+        const earningsPerMinute = earningsPerSecond * 60;
+        const earningsPerHour = earningsPerSecond * 3600;
+
+        const tooltip = document.getElementById("tooltip");
+        if (isMoneyMode) {
+          tooltip.innerHTML = `
+                $${earningsPerSecond.toFixed(4)} per second<br>
+                $${earningsPerMinute.toFixed(2)} per minute<br>
+                $${earningsPerHour.toFixed(2)} per hour
+            `;
+        } else {
+          tooltip.innerHTML = `
+                ${earningsPerSecond.toFixed(4)} beans per second<br>
+                ${earningsPerMinute.toFixed(2)} beans per minute<br>
+                ${earningsPerHour.toFixed(2)} beans per hour
+            `;
+        }
+      }
+
+      // Allow restarting by pressing 'R' key
+      document.addEventListener("keydown", function (event) {
+        if (event.key.toLowerCase() === "r") {
+          location.reload();
+        }
+      });
+    </script>
+  </body>
+</html>
