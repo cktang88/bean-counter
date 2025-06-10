@@ -38,6 +38,20 @@
         color: #00ff88;
         cursor: help;
         position: relative;
+        user-select: none;
+      }
+
+      .earnings.clickable {
+        cursor: pointer;
+        transition: transform 0.1s ease;
+      }
+
+      .earnings.clickable:hover {
+        transform: scale(1.02);
+      }
+
+      .earnings.clickable:active {
+        transform: scale(0.98);
       }
 
       .tooltip {
@@ -110,6 +124,7 @@
       let salary = 0;
       let startTime = null;
       let intervalId = null;
+      let manualBeans = 0;
 
       let isMoneyMode = false;
 
@@ -162,6 +177,16 @@
 
         // Hide the button
         document.querySelector("button").style.display = "none";
+
+        // Make earnings clickable in beans mode
+        if (!isMoneyMode) {
+          const earningsElement = document.getElementById("earnings");
+          earningsElement.classList.add("clickable");
+          earningsElement.onclick = function() {
+            manualBeans++;
+            updateEarnings();
+          };
+        }
       }
 
       function updateEarnings() {
@@ -178,7 +203,8 @@
 
         // Calculate earnings per second based on actual working time
         const earningsPerSecond = salary / workingSecondsPerYear;
-        const totalEarnings = earningsPerSecond * secondsElapsed;
+        const autoEarnings = earningsPerSecond * secondsElapsed;
+        const totalEarnings = autoEarnings + manualBeans;
 
         // Update the earnings display
         const earningsElement = document.getElementById("earnings");
