@@ -150,6 +150,11 @@
         }
 
         startTime = new Date();
+        localStorage.setItem('beanCounterStartTime', startTime.getTime());
+        localStorage.setItem('beanCounterSalary', salary);
+        localStorage.setItem('beanCounterIsMoneyMode', isMoneyMode);
+        localStorage.setItem('beanCounterManualBeans', 0); // Initialize manualBeans to 0
+        manualBeans = 0; // Also update the in-memory variable
 
         if (isMoneyMode) {
           document.getElementById(
@@ -184,6 +189,7 @@
           earningsElement.classList.add("clickable");
           earningsElement.onclick = function() {
             manualBeans++;
+            localStorage.setItem('beanCounterManualBeans', manualBeans);
             updateEarnings();
           };
         }
@@ -238,12 +244,95 @@
         }
       }
 
+      function loadStateFromLocalStorage() {
+        const storedTimestampStr = localStorage.getItem('beanCounterStartTime');
+        const storedSalaryStr = localStorage.getItem('beanCounterSalary');
+
+        if (!storedTimestampStr || !storedSalaryStr) {
+          console.log("No stored start time or salary found. Starting fresh.");
+          return;
+        }
+
+        const storedTimestamp = parseFloat(storedTimestampStr);
+        const loadedSalary = parseFloat(storedSalaryStr);
+        const loadedIsMoneyMode = localStorage.getItem('beanCounterIsMoneyMode') === 'true';
+        const loadedManualBeans = parseFloat(localStorage.getItem('beanCounterManualBeans')) || 0;
+
+        if (isNaN(storedTimestamp) || isNaN(loadedSalary)) {
+          console.error("Invalid stored data. Starting fresh.");
+          // Optionally, clear the invalid localStorage items
+          // localStorage.removeItem('beanCounterStartTime');
+          // localStorage.removeItem('beanCounterSalary');
+          // localStorage.removeItem('beanCounterIsMoneyMode');
+          // localStorage.removeItem('beanCounterManualBeans');
+          return;
+        }
+
+        // Set global variables
+        salary = loadedSalary;
+        isMoneyMode = loadedIsMoneyMode;
+        manualBeans = loadedManualBeans;
+        startTime = new Date(storedTimestamp);
+
+        // The updateEarnings function will correctly calculate earnings from the original startTime.
+        // manualBeans already reflects only clicked beans.
+        // No need to explicitly calculate and add 'beansAccruedOffline' to a display counter here,
+        // as updateEarnings() handles total calculation based on the restored startTime.
+        // For clarity, if one *were* to calculate it for some other purpose:
+        // const now = new Date();
+        // const millisecondsElapsed = now.getTime() - startTime.getTime();
+        // const secondsElapsed = millisecondsElapsed / 1000;
+        // const workingHoursPerYear = 52 * 5 * 8;
+        // const workingSecondsPerYear = workingHoursPerYear * 3600;
+        // const earningsPerSecond = salary / workingSecondsPerYear;
+        // const beansAccruedOfflineAndSinceStart = earningsPerSecond * secondsElapsed;
+        // console.log(`Total beans/currency accrued since original start: ${beansAccruedOfflineAndSinceStart}`);
+
+
+        // Update UI elements
+        const infoEl = document.getElementById('info');
+        const startedTimeEl = document.getElementById('startedTime');
+        const earningsElement = document.getElementById('earnings');
+
+        if (isMoneyMode) {
+          infoEl.textContent = `Earning $${salary.toLocaleString()} per year`;
+          startedTimeEl.textContent = `Started counting at: ${startTime.toLocaleString()}`;
+        } else {
+          infoEl.textContent = `Growing ${salary.toLocaleString()} beans per year`;
+          startedTimeEl.textContent = `Started growing at: ${startTime.toLocaleString()}`;
+          earningsElement.classList.add('clickable');
+          earningsElement.onclick = function() {
+            manualBeans++;
+            localStorage.setItem('beanCounterManualBeans', manualBeans);
+            updateEarnings();
+          };
+        }
+
+        // Hide the start button
+        document.querySelector('button').style.display = 'none';
+
+        // Clear any existing interval and start new one
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+        intervalId = setInterval(updateEarnings, 100);
+
+        // Call updateEarnings once immediately to update the display
+        updateEarnings();
+      }
+
       // Allow restarting by pressing 'R' key
       document.addEventListener("keydown", function (event) {
         if (event.key.toLowerCase() === "r") {
+          localStorage.removeItem('beanCounterStartTime');
+          localStorage.removeItem('beanCounterSalary');
+          localStorage.removeItem('beanCounterIsMoneyMode');
+          localStorage.removeItem('beanCounterManualBeans');
           location.reload();
         }
       });
+
+      loadStateFromLocalStorage();
     </script>
   </body>
 </html>
